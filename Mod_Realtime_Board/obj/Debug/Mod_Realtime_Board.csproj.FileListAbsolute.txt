@@ -1,0 +1,6 @@
+C:\Users\chengmin.zhong\Desktop\Mod_Realtime_Board\Mod_Realtime_Board\bin\Mod_Realtime_Board.dll
+C:\Users\chengmin.zhong\Desktop\Mod_Realtime_Board\Mod_Realtime_Board\bin\Mod_Realtime_Board.pdb
+C:\Users\chengmin.zhong\Desktop\Mod_Realtime_Board\Mod_Realtime_Board\obj\Debug\Mod_Realtime_Board.dll
+C:\Users\chengmin.zhong\Desktop\Mod_Realtime_Board\Mod_Realtime_Board\obj\Debug\Mod_Realtime_Board.pdb
+C:\Users\chengmin.zhong\Desktop\Mod_Realtime_Board\Mod_Realtime_Board\bin\Oracle.DataAccess.dll
+C:\Users\chengmin.zhong\Desktop\Mod_Realtime_Board\Mod_Realtime_Board\obj\Debug\Mod_Realtime_Board.csprojResolveAssemblyReference.cache

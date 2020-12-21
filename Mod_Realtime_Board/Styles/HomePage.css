@@ -1,0 +1,20 @@
+﻿.procSelect,.lineSelect
+{
+   width: 100px;
+   display: inline-block;
+}
+.line
+{
+    font-weight:bold;
+    font-size: 16pt;    
+}
+.btn-success{
+width: 80px;
+}
+
+#hourOutputChart,#totalOutputChart,#hourRateChart
+{
+    height:400px; 
+    background: linear-gradient(to left,#A6CBFF 0%,#ffffff 100%);
+    width:100%;
+}
