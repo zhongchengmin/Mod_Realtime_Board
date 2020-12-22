@@ -82,7 +82,7 @@
                         width: 22.22%; border-top-width: thin; border-left-width: thin; border-left-color: black;
                         border-top-color: black; border-right-width: thin;
                         border-right-color: black;" align="center" valign="middle">
-                        <span class="line" v-on:click="test">線別：</span>
+                        <span class="line">線別：</span>
                         <select class="form-control lineSelect" ref="line">
                         <option  v-for="item in line" v-bind:value="item.EQP_LINE">{{item.EQP_LINE}}</option>
                         </select>
@@ -219,7 +219,7 @@
                         align="center" valign="middle">
                         <asp:Label runat="server" ID="lblManpowerDiffQty" Text="差異人力&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0"
                             Width="80%" ForeColor="Black" BackColor="LightSalmon" Font-Bold="False" Font-Size="12pt"
-                            BorderStyle="Outset">{{"差異人力&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+(pgInfo.QTY-pgInfo.OLD_NEED)}}</asp:Label>
+                            BorderStyle="Outset">{{"差異人力&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+(pgInfo.QTY-pgInfo.OLD_NEED).toFixed(1)}}</asp:Label>
                     </td>
                     <td colspan="3" style="border-bottom: black thin solid; height: 2.78%; border-right: black thin solid;
                         width: 11.12%;" align="center" valign="middle">
@@ -352,14 +352,14 @@
             el: '#app',
             data: function () {
                 return {
-                    line: [],
-                    lineShow:'',
-                    currentProd:'',
-                    outputTarget:0,
-                    outputActual:0,
-                    refreshTimeInfo:'',
-                    refreshTime:900,
-                    pgInfo:{},
+                    line: [],//線別下拉框數據
+                    lineShow:'',//左上角的製程段+線別
+                    currentProd:'',//機種
+                    outputTarget:0,//產出目標
+                    outputActual:0,//產出實際
+                    refreshTimeInfo:'',//刷新時間信息
+                    refreshTime:900,//刷新時間
+                    pgInfo:{},//派工數據
                     Option:{
                         title: {
                             show:false,
@@ -376,7 +376,7 @@
                             bottom:2,
                              containLabel:true,
                              width:'100%',
-                             height:'90%'
+                             height:'85%'
                         },
                         tooltip: {
                             show: true,
@@ -470,11 +470,6 @@
                             barWidth:'70%',
                             barMaxWidth:70,
                             data: [58, 69, 85, 52,40, 20,35,75,10,25,65,14],
-//                            itemStyle: {
-//                            color:function(params){
-//                                console.log(params);
-//                            }
-//                            },
                             label:{
                                 show:true,
                                 position :'top',
@@ -545,6 +540,7 @@
                     this.totalOutput(process,line);
 
                     //分時良率邏輯
+                    this.hourRate(process,line);
                     
                     //派工邏輯
                     this.pgQty(process,line);
@@ -636,10 +632,233 @@
                         }
                     this.Option.series[1].data=totalOutputChart_target;
                     totalOutputChart.setOption(this.Option);
-                    this.Option.series[0]={};  
+                    this.Option.series[0]={};
                 },//分時良率
                 hourRate:async function(process,line){
-                     //var hourRate=await axios.get('HomePage.aspx',{params:{'flag':'rate','process':process,'line':line}});
+                     var hourRate=await axios.get('HomePage.aspx',{params:{'flag':'rate','process':process,'line':line}});
+
+                     var hourRateChart_xAxis=[];//橫坐標
+                     var hourRateChart_yAxis=[];//縱坐標
+
+                     var TOTAL_RATE_Obj={};
+                     var TOTAL_TARGET_YIELD_Obj={};
+
+                     var TOTAL_RATE_yAxis=[];//實際良率縱坐標數據
+                     var TOTAL_TARGET_YIELD_yAxis=[];//目標良率縱坐標數據
+
+                     var xAxis_Set =new Set();
+                     var ERRC_DESCR_Set = new Set();
+
+                     var ERRC_DESCR=[];//當前製程段和線別底下的所有defectcode
+
+                     if(hourRate.data.data.length>0){
+                         hourRate.data.data.forEach(item=>{
+                            xAxis_Set.add(item['TIMEHOUR']);
+                            if(item['ERRC_DESCR']){
+                                ERRC_DESCR_Set.add(item['ERRC_DESCR']);
+                            }
+                            TOTAL_RATE_Obj[item['TIMEHOUR']]=item['TOTAL_RATE'];
+                            TOTAL_TARGET_YIELD_Obj[item['TIMEHOUR']]=item['TOTAL_TARGET_YIELD'];
+                         });
+                         hourRateChart_xAxis=Array.from(xAxis_Set);
+                         ERRC_DESCR=Array.from(ERRC_DESCR_Set);
+                     }else{
+                        hourRateChart_xAxis=[];
+                        hourRateChart_yAxis=[];
+                     }
+
+                     if(Object.keys(TOTAL_RATE_Obj).length>0){
+                        for(var item in TOTAL_RATE_Obj){
+                            TOTAL_RATE_yAxis.push(TOTAL_RATE_Obj[item]);
+                        }
+                     }
+
+                     if(Object.keys(TOTAL_TARGET_YIELD_Obj).length>0){
+                        for(var item in TOTAL_RATE_Obj){
+                            TOTAL_TARGET_YIELD_yAxis.push(TOTAL_TARGET_YIELD_Obj[item]);
+                        }
+                     }
+                    
+
+                     if(ERRC_DESCR.length>0){
+                        ERRC_DESCR.forEach((ERRC,ERRC_index)=>{
+                            var ERRC_obj={};
+                            var ERRC_Array=[];
+                            var defect_Array=[];
+                            hourRate.data.data.forEach((RateValue,Rate_index)=>{
+                                if(ERRC==RateValue['ERRC_DESCR']){
+                                    ERRC_Array.push({
+                                        'TIMEHOUR':RateValue['TIMEHOUR'],
+                                         'MAIN_QTY':RateValue['MAIN_QTY']
+                                    });
+                                }else{
+                                    ERRC_Array.push({
+                                        'TIMEHOUR':RateValue['TIMEHOUR'],
+                                         'MAIN_QTY':0
+                                    });
+                                }
+                            });
+
+                            for(let item of ERRC_Array){
+                                if(ERRC_obj[item['TIMEHOUR']]){
+                                    if(item['MAIN_QTY']>=1){
+                                        ERRC_obj[item['TIMEHOUR']]=item['MAIN_QTY'];
+                                    }
+                                }else{
+                                    ERRC_obj[item['TIMEHOUR']]=item['MAIN_QTY'];
+                                }
+                            }
+
+                            for(let item in ERRC_obj){
+                                defect_Array.push(ERRC_obj[item]);
+                            }
+
+
+                            hourRateChart_yAxis.push({
+                                name: ERRC,
+                                type: 'bar',
+                                stack: 'DefectCode',
+                                yAxisIndex:1,
+                                data: defect_Array,
+                                label:{
+                                    show:true,
+                                    position:'inside',
+                                    formatter:function(val){
+                                        if(val.value==0){
+                                            return ''
+                                        }else{
+                                            return val.value
+                                        }
+                                     }
+                                }
+                            });
+
+                            ERRC_Array=[];
+                            defect_Array=[];
+                            ERRC_obj={};
+                        });
+                     }
+
+                     this.Option['xAxis']['data']=hourRateChart_xAxis;
+                     this.Option['series']=hourRateChart_yAxis;
+                     this.Option['series'].push({
+                            name: '實際良率',
+                            type: 'line',
+                            yAxisIndex:0,
+                            data: TOTAL_RATE_yAxis,
+                            itemStyle: {
+                                color:'blue'
+                            },
+                            label:{
+                                show:true,
+                                position :'top',
+                                formatter:function(params){
+                                    return params.value+'%'
+                                }
+                            }
+                        });
+                        this.Option['series'].push({
+                            name: '目標良率',
+                            type: 'line',
+                            yAxisIndex:0,
+                            data: TOTAL_TARGET_YIELD_yAxis,
+                            itemStyle: {
+                                color:'red'
+                            },
+                            label:{
+                                show:true,
+                                position :'top',
+                                formatter:function(params){
+                                    return params.value+'%'
+                                }
+                            }
+                        });
+                     this.Option.legend={
+                            data: ERRC_DESCR.concat(['目標良率','實際良率']),
+                            type: 'scroll',
+                            left:0,
+                            width:'80%'
+                        }
+                     this.Option.yAxis= [
+                         {
+                                type:'value',
+                                axisLabel:{
+                                    formatter:'{value} %'
+                                },
+                                scale:true,
+                                splitLine: {
+                                    show: false//是否显示分隔线。默认数值轴显示，类目轴不显示。
+                                }
+                          },
+                          {
+                                type:'value',
+                                scale:true,
+                                splitLine: {
+                                    show: false//是否显示分隔线。默认数值轴显示，类目轴不显示。
+                                }
+                          }
+                      ]
+
+                     var hourRateChart=echarts.init(this.$refs.hourRateChart);
+                     hourRateChart.setOption(this.Option);
+
+
+                     //下面代碼的主要目的是恢復option到初始狀態,提供分時產出圖標使用
+
+                     this.Option.legend.data=['計劃','實際'];
+                     this.Option.legend={
+                             show:true,
+                            data: ['計劃','實際'],
+                            orient: 'horizontal',
+                            left: 'left', 
+                            top: 'top',
+                            textStyle: {
+                                color: '#000',
+                                fontSize: '12'
+                            }//設置圖例的字體顏色和大小
+                        }
+
+                        this.Option.yAxis= {
+                            type:'value',
+                            scale:true,
+                            splitLine: {
+                                show: false//是否显示分隔线。默认数值轴显示，类目轴不显示。
+                            }
+                        }
+                        this.Option.series=[{
+                            name: '實際',
+                            type: 'bar',
+                            barWidth:'70%',
+                            barMaxWidth:70,
+                            data: [],
+                            label:{
+                                show:true,
+                                position :'top',
+                                textStyle: {
+                                    color: '#555'
+                                },
+                                formatter:function(val){
+                                    if(val.value==0){
+                                        return ''
+                                    }else{
+                                        return val.value
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            name: '計劃',
+                            type: 'line',
+                            data: [],
+                            itemStyle: {
+                                color:'red'
+                            },
+                            label:{
+                                show:true,
+                                position :'top'
+                            }
+                        }
+                        ];
                      
                 },//獲取派工人力
                 pgQty:function(process,line){
@@ -680,9 +899,6 @@
                     var process=this.$refs.process.value;
                     var line=this.$refs.line.value;
                     this.loadQueryData(process,line);
-                },
-                test:function(){
-                    console.log(this.line);
                 }
             }
         });

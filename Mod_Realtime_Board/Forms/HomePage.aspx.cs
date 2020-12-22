@@ -386,6 +386,7 @@ and a.EQP_LINE=b.work_ctr and a.PROD_NBR=b.PROD_NBR
 )where rl<=10
 )b on a.TIMEHOUR=b.TRANS_HOUR
 " + rn + @"
+and a.TIMEHOUR<=(to_char(sysdate,'hh24')+1)||':00'
 order by a.rn";
 
             DBConnection.DBConnection conn = new DBConnection.DBConnection("PHAAMSDA1_PHBUR");
