@@ -633,7 +633,9 @@
                     this.Option.series[1].data=totalOutputChart_target;
                     totalOutputChart.setOption(this.Option);
                     this.Option.series[0]={};
-                },//分時良率
+                },//分時良率(串接分時良率這個邏輯大概花了一天的時間，因為之前很少做堆疊圖，按照堆疊圖的規則來整理數據話費了漫長的時間。主要是需要從獲取到的數據進行加工和整理以滿足堆疊圖數據的呈現)
+                //可以從這個網址觀察堆疊圖數據的規則來整理數據。https://echarts.apache.org/examples/zh/editor.html?c=bar-stack
+                //整理數據的主要難點是在堆疊圖的縱坐標這一方面，首先需要根據每個defect獲取每個時間段的所有defect數量，如果在該時間段有defect則計算出在改時間段的數量否則數量為0，然後對數據進行去重處理，如果同一個時間段的同一個defect有多個，如果數量都為0則取一筆，否則就取不為0的那筆，這大概就是複雜的邏輯
                 hourRate:async function(process,line){
                      var hourRate=await axios.get('HomePage.aspx',{params:{'flag':'rate','process':process,'line':line}});
 
@@ -660,19 +662,19 @@
                             TOTAL_RATE_Obj[item['TIMEHOUR']]=item['TOTAL_RATE'];
                             TOTAL_TARGET_YIELD_Obj[item['TIMEHOUR']]=item['TOTAL_TARGET_YIELD'];
                          });
-                         hourRateChart_xAxis=Array.from(xAxis_Set);
-                         ERRC_DESCR=Array.from(ERRC_DESCR_Set);
+                         hourRateChart_xAxis=Array.from(xAxis_Set);//獲取橫坐標數據
+                         ERRC_DESCR=Array.from(ERRC_DESCR_Set);//獲取所有defect數據
                      }else{
                         hourRateChart_xAxis=[];
                         hourRateChart_yAxis=[];
                      }
-
+                     //整理得到實際良率縱坐標數據
                      if(Object.keys(TOTAL_RATE_Obj).length>0){
                         for(var item in TOTAL_RATE_Obj){
                             TOTAL_RATE_yAxis.push(TOTAL_RATE_Obj[item]);
                         }
                      }
-
+                     //整理得到目標良率縱坐標數據
                      if(Object.keys(TOTAL_TARGET_YIELD_Obj).length>0){
                         for(var item in TOTAL_RATE_Obj){
                             TOTAL_TARGET_YIELD_yAxis.push(TOTAL_TARGET_YIELD_Obj[item]);
@@ -708,7 +710,7 @@
                                     ERRC_obj[item['TIMEHOUR']]=item['MAIN_QTY'];
                                 }
                             }
-
+                            //得到堆疊圖中的數據
                             for(let item in ERRC_obj){
                                 defect_Array.push(ERRC_obj[item]);
                             }
@@ -775,7 +777,7 @@
                         });
                      this.Option.legend={
                             data: ERRC_DESCR.concat(['目標良率','實際良率']),
-                            type: 'scroll',
+                            type: 'scroll',//圖例橫向滾動
                             left:0,
                             width:'80%'
                         }
